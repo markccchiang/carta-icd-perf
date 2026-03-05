@@ -1,7 +1,9 @@
 #!/bin/bash
 
-LOG_DIR="log"
-OUTPUT_FILE="test_logs/PERF_CUBE_HISTOGRAM_FITS.log"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+BASE_DIR="$SCRIPT_DIR/.."
+LOG_DIR="$BASE_DIR/log"
+OUTPUT_FILE="$BASE_DIR/test_logs/PERF_CUBE_HISTOGRAM_FITS.log"
 
 # Write header
 printf "%-14s%s\n" "Date" "Time" > "$OUTPUT_FILE"

@@ -1,8 +1,9 @@
 #!/bin/bash
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-LOGDIR="$SCRIPT_DIR/test_logs"
-OUTFILE="$SCRIPT_DIR/dashboard.html"
+BASE_DIR="$SCRIPT_DIR/.."
+LOGDIR="$BASE_DIR/test_logs"
+OUTFILE="$BASE_DIR/dashboard.html"
 
 # Build JSON data from all log files
 json_data="{"

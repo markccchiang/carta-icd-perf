@@ -1,8 +1,9 @@
 #!/bin/bash
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+BASE_DIR="$SCRIPT_DIR/.."
 
-mkdir -p "$SCRIPT_DIR/test_logs"
+mkdir -p "$BASE_DIR/test_logs"
 
 count=0
 for script in "$SCRIPT_DIR"/extract_perf_*.sh; do

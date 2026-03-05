@@ -1,7 +1,9 @@
 #!/bin/bash
 
-LOG_DIR="log"
-OUTPUT_FILE="test_logs/PERF_MOMENTS_CASA.log"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+BASE_DIR="$SCRIPT_DIR/.."
+LOG_DIR="$BASE_DIR/log"
+OUTPUT_FILE="$BASE_DIR/test_logs/PERF_RASTER_TILE_DATA_CASA.log"
 
 # Write header
 printf "%-14s%s\n" "Date" "Time" > "$OUTPUT_FILE"
@@ -15,15 +17,15 @@ for logfile in "$LOG_DIR"/perf-*.log; do
     formatted_date="${date:0:4}-${date:4:2}-${date:6:2}"
 
     # Check if the file contains the PASS line for this test
-    if ! grep -q "PASS src/performance/PERF_MOMENTS_CASA.test.ts" "$logfile"; then
-        printf "%-14s%-52s%s\n" "$formatted_date" "PERF_MOMENTS_CASA" "N/A" >> "$OUTPUT_FILE"
+    if ! grep -q "PASS src/performance/PERF_RASTER_TILE_DATA_CASA.test.ts" "$logfile"; then
+        printf "%-14s%-52s%s\n" "$formatted_date" "PERF_RASTER_TILE_DATA_CASA" "N/A" >> "$OUTPUT_FILE"
         continue
     fi
 
     # Extract the elapsed time from the target line after the PASS line
     elapsed=$(awk '
-        /PASS src\/performance\/PERF_MOMENTS_CASA\.test\.ts/ { found=1; next }
-        found && /\(Step 3\).*S255_IR_sci\.spw25\.cube\.I\.pbcor\.image.*Receive a series of moment progress within 400000ms/ {
+        /PASS src\/performance\/PERF_RASTER_TILE_DATA_CASA\.test\.ts/ { found=1; next }
+        found && /\(Step 2\).*cube_B_06400_z00100\.image.*RasterTileData responses should arrive within 10000 ms/ {
             n = split($0, a, "(")
             for (i = 1; i <= n; i++) {
                 if (a[i] ~ /^[0-9]+ ms\)/) {
@@ -37,9 +39,9 @@ for logfile in "$LOG_DIR"/perf-*.log; do
     ' "$logfile")
 
     if [ -n "$elapsed" ]; then
-        printf "%-14s%-52s%s ms\n" "$formatted_date" "PERF_MOMENTS_CASA" "$elapsed" >> "$OUTPUT_FILE"
+        printf "%-14s%-52s%s ms\n" "$formatted_date" "PERF_RASTER_TILE_DATA_CASA" "$elapsed" >> "$OUTPUT_FILE"
     else
-        printf "%-14s%-52s%s\n" "$formatted_date" "PERF_MOMENTS_CASA" "N/A" >> "$OUTPUT_FILE"
+        printf "%-14s%-52s%s\n" "$formatted_date" "PERF_RASTER_TILE_DATA_CASA" "N/A" >> "$OUTPUT_FILE"
     fi
 done
 
