@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Performance Test Dashboard</title>
+<title>CARTA ICD Performance Tests</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -106,15 +106,13 @@
 </head>
 <body>
 
-<h1>Performance Test Dashboard</h1>
+<h1>CARTA ICD Performance Tests</h1>
 <p class="subtitle">Elapsed time trends across test runs</p>
 
 <div class="controls">
   <select id="filter">
     <option value="ALL">All Tests</option>
   </select>
-  <button id="sortName" class="active">Sort by Name</button>
-  <button id="sortTrend">Sort by Trend</button>
 </div>
 
 <div class="grid" id="grid"></div>
@@ -262,10 +260,9 @@ Object.keys(groups).sort().forEach(group => {
   filterEl.appendChild(opt);
 });
 
-let currentSort = 'name';
 let charts = [];
 
-function renderGrid(filter = 'ALL', sort = 'name') {
+function renderGrid(filter = 'ALL') {
   const grid = document.getElementById('grid');
   grid.innerHTML = '';
   charts.forEach(c => c.destroy());
@@ -276,15 +273,7 @@ function renderGrid(filter = 'ALL', sort = 'name') {
     entries = entries.filter(([name]) => name === filter);
   }
 
-  if (sort === 'trend') {
-    entries.sort((a, b) => {
-      // Sort by max avg slope across variants
-      const maxSlope = variants => Math.max(...Object.values(variants).map(v => getStats(v.times).slope));
-      return maxSlope(b[1]) - maxSlope(a[1]);
-    });
-  } else {
-    entries.sort((a, b) => a[0].localeCompare(b[0]));
-  }
+  entries.sort((a, b) => a[0].localeCompare(b[0]));
 
   entries.forEach(([groupName, variants]) => {
     const card = document.createElement('div');
@@ -343,21 +332,7 @@ modal.addEventListener('click', (e) => {
 });
 
 // Controls
-filterEl.addEventListener('change', () => renderGrid(filterEl.value, currentSort));
-
-document.getElementById('sortName').addEventListener('click', () => {
-  currentSort = 'name';
-  document.getElementById('sortName').classList.add('active');
-  document.getElementById('sortTrend').classList.remove('active');
-  renderGrid(filterEl.value, currentSort);
-});
-
-document.getElementById('sortTrend').addEventListener('click', () => {
-  currentSort = 'trend';
-  document.getElementById('sortTrend').classList.add('active');
-  document.getElementById('sortName').classList.remove('active');
-  renderGrid(filterEl.value, currentSort);
-});
+filterEl.addEventListener('change', () => renderGrid(filterEl.value));
 
 renderGrid();
 </script>
