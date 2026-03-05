@@ -6,19 +6,19 @@ LOG_DIR="$BASE_DIR/log"
 OUTPUT_FILE="$BASE_DIR/test_logs/PERF_ANIMATOR_CONTOUR_HDF5.log"
 
 # Write header
-printf "%-14s%s\n" "Date" "Time" > "$OUTPUT_FILE"
-printf "%-14s%s\n" "----------" "----------" >> "$OUTPUT_FILE"
+printf "%-17s%s\n" "Date" "Time" > "$OUTPUT_FILE"
+printf "%-17s%s\n" "----------" "----------" >> "$OUTPUT_FILE"
 
 for logfile in "$LOG_DIR"/perf-*.log; do
     filename=$(basename "$logfile")
     date="${filename#perf-}"
     date="${date%.log}"
-    # Format date as YYYY-MM-DD
-    formatted_date="${date:0:4}-${date:4:2}-${date:6:2}"
+    # Format date as YYYY-MM-DD-HH
+    formatted_date="${date:0:4}-${date:4:2}-${date:6:2}-${date:9:2}"
 
     # Check if the file contains the PASS line for this test
     if ! grep -q "PASS src/performance/PERF_ANIMATOR_CONTOUR_HDF5.test.ts" "$logfile"; then
-        printf "%-14s%s\n" "$formatted_date" "N/A" >> "$OUTPUT_FILE"
+        printf "%-17s%s\n" "$formatted_date" "N/A" >> "$OUTPUT_FILE"
         continue
     fi
 
@@ -41,9 +41,9 @@ for logfile in "$LOG_DIR"/perf-*.log; do
     ' "$logfile")
 
     if [ -n "$elapsed" ]; then
-        printf "%-14s%s ms\n" "$formatted_date" "$elapsed" >> "$OUTPUT_FILE"
+        printf "%-17s%s ms\n" "$formatted_date" "$elapsed" >> "$OUTPUT_FILE"
     else
-        printf "%-14s%s\n" "$formatted_date" "N/A" >> "$OUTPUT_FILE"
+        printf "%-17s%s\n" "$formatted_date" "N/A" >> "$OUTPUT_FILE"
     fi
 done
 
