@@ -18,7 +18,7 @@ for logfile in "$LOG_DIR"/perf-*.log; do
 
     # Check if the file contains the PASS line for this test
     if ! grep -q "PASS src/performance/PERF_CONTOUR_DATA_Mode0.test.ts" "$logfile"; then
-        printf "%-14s%-52s%s\n" "$formatted_date" "PERF_CONTOUR_DATA_Mode0" "N/A" >> "$OUTPUT_FILE"
+        printf "%-14s%s\n" "$formatted_date" "N/A" >> "$OUTPUT_FILE"
         continue
     fi
 
@@ -39,9 +39,9 @@ for logfile in "$LOG_DIR"/perf-*.log; do
     ' "$logfile")
 
     if [ -n "$elapsed" ]; then
-        printf "%-14s%-52s%s ms\n" "$formatted_date" "PERF_CONTOUR_DATA_Mode0" "$elapsed" >> "$OUTPUT_FILE"
+        printf "%-14s%s ms\n" "$formatted_date" "$elapsed" >> "$OUTPUT_FILE"
     else
-        printf "%-14s%-52s%s\n" "$formatted_date" "PERF_CONTOUR_DATA_Mode0" "N/A" >> "$OUTPUT_FILE"
+        printf "%-14s%s\n" "$formatted_date" "N/A" >> "$OUTPUT_FILE"
     fi
 done
 
