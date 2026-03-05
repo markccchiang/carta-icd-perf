@@ -8,9 +8,8 @@ A set of bash scripts that parse Jest performance test logs and generate an inte
 perf-dashboard/
 ├── log/                    # Source log files (perf-YYYYMMDD.log)
 ├── test_logs/              # Generated per-test elapsed time logs
-├── extract_times.sh        # List all test times from each log file
-├── track_test.sh           # Track a specific test across all dates
-├── run_all_tests.sh        # Generate per-test log files into test_logs/
+├── extract_perf_*.sh       # Individual extraction scripts per test
+├── run_all_tests.sh        # Run all extraction scripts
 ├── generate_dashboard.sh   # Generate dashboard.html from test_logs/
 ├── dashboard.html          # Generated interactive dashboard
 └── README.md
@@ -32,32 +31,18 @@ open dashboard.html
 
 ## Scripts
 
-### extract_times.sh
+### extract_perf_*.sh
 
-Lists all test names and their elapsed times from every `perf-*.log` file in `log/`.
-
-```bash
-./extract_times.sh
-```
-
-### track_test.sh
-
-Tracks a specific test's elapsed time across all dates. Supports exact and partial matching.
+Individual scripts that extract elapsed times for a specific test from all `perf-*.log` files in `log/` and write results to `test_logs/`. Each script targets a specific test and search pattern.
 
 ```bash
-# List all available test names
-./track_test.sh
-
-# Track a specific test
-./track_test.sh PERF_PV_CASA
-
-# Partial match (shows all PV tests: CASA, FITS, HDF5)
-./track_test.sh PERF_PV
+# Run a single extraction
+./extract_perf_pv_casa.sh
 ```
 
 ### run_all_tests.sh
 
-Runs `track_test.sh` for every test and saves the results as individual log files in `test_logs/`.
+Runs all `extract_perf_*.sh` scripts and saves the results as individual log files in `test_logs/`.
 
 ```bash
 ./run_all_tests.sh
@@ -75,7 +60,7 @@ Reads all log files in `test_logs/` and generates a self-contained `dashboard.ht
 
 - **Time vs. Date charts** for all 24 performance tests
 - **Trend line** (dashed red) showing linear regression
-- **Stats** per test: Min, Max, Avg, and Trend (s/day)
+- **Stats** per test: Min, Max, Avg, and Trend (ms/day)
 - **Filter dropdown** to view tests by category (e.g., PV, MOMENTS, CUBE HISTOGRAM)
 - **Sort** by name or by trend (worst-degrading first)
 - **Click any chart** to enlarge it in a modal view
