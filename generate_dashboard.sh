@@ -18,39 +18,36 @@ for logfile in "$LOGDIR"/PERF_*.log; do
     fi
 
     json_data+="\"$testname\":{\"dates\":["
-    first_entry=true
-
-    # Skip header lines (first 2 lines), parse data lines
-    tail -n +3 "$logfile" | while IFS= read -r line; do
-        [ -z "$line" ] && continue
-        date=$(echo "$line" | awk '{print $1}')
-        time=$(echo "$line" | grep -o '[0-9.]\+ s' | awk '{print $1}')
-        [ -z "$date" ] && continue
-        [ -z "$time" ] && continue
-        if [ "$first_entry" = true ]; then
-            first_entry=false
-        else
-            printf ","
-        fi
-        printf '"%s"' "$date"
-    done
-
     json_data+=$(tail -n +3 "$logfile" | while IFS= read -r line; do
         [ -z "$line" ] && continue
         date=$(echo "$line" | awk '{print $1}')
-        time=$(echo "$line" | grep -o '[0-9.]\+ s' | awk '{print $1}')
         [ -z "$date" ] && continue
-        [ -z "$time" ] && continue
-        printf '"%s"\n' "$date"
+        # Skip N/A entries
+        echo "$line" | grep -q 'N/A' && continue
+        # Match either "123 ms" or "123.456 s"
+        if echo "$line" | grep -q '[0-9]\+ ms'; then
+            printf '"%s"\n' "$date"
+        elif echo "$line" | grep -q '[0-9.]\+ s'; then
+            printf '"%s"\n' "$date"
+        fi
     done | paste -sd ',' -)
 
     json_data+="],\"times\":["
 
     json_data+=$(tail -n +3 "$logfile" | while IFS= read -r line; do
         [ -z "$line" ] && continue
-        time=$(echo "$line" | grep -o '[0-9.]\+ s' | awk '{print $1}')
-        [ -z "$time" ] && continue
-        printf '%s\n' "$time"
+        # Skip N/A entries
+        echo "$line" | grep -q 'N/A' && continue
+        # Match "123 ms" and convert to ms, or match "123.456 s" and convert to ms
+        if echo "$line" | grep -q '[0-9]\+ ms'; then
+            time=$(echo "$line" | grep -o '[0-9]\+ ms' | awk '{print $1}')
+            [ -z "$time" ] && continue
+            printf '%s\n' "$time"
+        elif echo "$line" | grep -q '[0-9.]\+ s'; then
+            time=$(echo "$line" | grep -o '[0-9.]\+ s' | awk '{printf "%.0f", $1 * 1000}')
+            [ -z "$time" ] && continue
+            printf '%s\n' "$time"
+        fi
     done | paste -sd ',' -)
 
     json_data+="]}"
@@ -232,7 +229,7 @@ function createChart(canvas, testName, data, showLegend = false) {
       labels: data.dates,
       datasets: [
         {
-          label: 'Elapsed Time (s)',
+          label: 'Elapsed Time (ms)',
           data: data.times,
           borderColor: COLORS[colorIdx],
           backgroundColor: COLORS[colorIdx] + '20',
@@ -267,7 +264,7 @@ function createChart(canvas, testName, data, showLegend = false) {
           borderColor: '#334155',
           borderWidth: 1,
           callbacks: {
-            label: ctx => ctx.dataset.label === 'Trend' ? null : `${ctx.parsed.y.toFixed(3)} s`
+            label: ctx => ctx.dataset.label === 'Trend' ? null : `${ctx.parsed.y} ms`
           }
         }
       },
@@ -277,7 +274,7 @@ function createChart(canvas, testName, data, showLegend = false) {
           grid: { color: '#1e293b' }
         },
         y: {
-          title: { display: true, text: 'Seconds', color: '#64748b' },
+          title: { display: true, text: 'Milliseconds', color: '#64748b' },
           ticks: { color: '#64748b' },
           grid: { color: '#283548' }
         }
@@ -337,10 +334,10 @@ function renderGrid(filter = 'ALL', sort = 'name') {
       <h3>${testName}</h3>
       <canvas></canvas>
       <div class="stats">
-        <span>Min: <span class="val">${stats.min.toFixed(1)}s</span></span>
-        <span>Max: <span class="val">${stats.max.toFixed(1)}s</span></span>
-        <span>Avg: <span class="val">${stats.avg.toFixed(1)}s</span></span>
-        <span>Trend: <span class="val" style="color:${stats.slope > 0.1 ? '#f87171' : stats.slope < -0.1 ? '#34d399' : '#94a3b8'}">${stats.slope > 0 ? '+' : ''}${stats.slope.toFixed(3)} s/day</span></span>
+        <span>Min: <span class="val">${stats.min} ms</span></span>
+        <span>Max: <span class="val">${stats.max} ms</span></span>
+        <span>Avg: <span class="val">${stats.avg.toFixed(0)} ms</span></span>
+        <span>Trend: <span class="val" style="color:${stats.slope > 1 ? '#f87171' : stats.slope < -1 ? '#34d399' : '#94a3b8'}">${stats.slope > 0 ? '+' : ''}${stats.slope.toFixed(1)} ms/day</span></span>
       </div>
     `;
     grid.appendChild(card);
