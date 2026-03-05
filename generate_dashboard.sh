@@ -195,16 +195,50 @@ echo "const DATA = ${json_data};" >> "$OUTFILE"
 
 cat >> "$OUTFILE" << 'HTMLEOF2'
 
-const COLORS = [
-  '#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899',
-  '#06b6d4','#84cc16','#f97316','#6366f1','#14b8a6','#e11d48'
-];
+// Colors for each variant
+const VARIANT_COLORS = {
+  'CASA':  '#3b82f6',
+  'FITS':  '#10b981',
+  'HDF5':  '#f59e0b',
+  'Mode0': '#3b82f6',
+  'Mode1': '#10b981',
+  'Mode2': '#f59e0b',
+};
+
+// Identify the variant suffix for a test name
+const SUFFIXES = ['CASA', 'FITS', 'HDF5', 'Mode0', 'Mode1', 'Mode2'];
+
+function getVariant(testName) {
+  for (const s of SUFFIXES) {
+    if (testName.endsWith('_' + s) || testName.endsWith(s)) return s;
+  }
+  return null;
+}
+
+function getGroupName(testName) {
+  const variant = getVariant(testName);
+  if (!variant) return testName;
+  // Remove trailing _VARIANT or VARIANT
+  if (testName.endsWith('_' + variant)) return testName.slice(0, -(variant.length + 1));
+  return testName.slice(0, -variant.length);
+}
+
+// Group tests by base name
+function groupTests() {
+  const groups = {};
+  Object.keys(DATA).forEach(name => {
+    const group = getGroupName(name);
+    if (!groups[group]) groups[group] = {};
+    const variant = getVariant(name) || name;
+    groups[group][variant] = DATA[name];
+  });
+  return groups;
+}
 
 function getStats(times) {
   const min = Math.min(...times);
   const max = Math.max(...times);
   const avg = times.reduce((a,b) => a+b, 0) / times.length;
-  // Simple linear regression slope for trend
   const n = times.length;
   const xMean = (n - 1) / 2;
   const yMean = avg;
@@ -217,46 +251,44 @@ function getStats(times) {
   return { min, max, avg, slope };
 }
 
-function createChart(canvas, testName, data, showLegend = false) {
-  const stats = getStats(data.times);
-  // Trend line
-  const trendLine = data.dates.map((_, i) => stats.avg + stats.slope * (i - (data.dates.length - 1) / 2));
-  const colorIdx = Object.keys(DATA).indexOf(testName) % COLORS.length;
+function createGroupChart(canvas, groupName, variants, showLegend = false) {
+  // Collect all unique dates across variants
+  const allDates = new Set();
+  Object.values(variants).forEach(v => v.dates.forEach(d => allDates.add(d)));
+  const labels = [...allDates].sort();
+
+  const datasets = [];
+  Object.entries(variants).forEach(([variant, data]) => {
+    const color = VARIANT_COLORS[variant] || '#94a3b8';
+    // Map data to unified date labels (null for missing dates)
+    const dateMap = {};
+    data.dates.forEach((d, i) => { dateMap[d] = data.times[i]; });
+    const values = labels.map(d => dateMap[d] !== undefined ? dateMap[d] : null);
+
+    datasets.push({
+      label: variant,
+      data: values,
+      borderColor: color,
+      backgroundColor: color + '20',
+      fill: false,
+      tension: 0.3,
+      pointRadius: 3,
+      pointHoverRadius: 6,
+      borderWidth: 2,
+      spanGaps: true,
+    });
+  });
 
   return new Chart(canvas, {
     type: 'line',
-    data: {
-      labels: data.dates,
-      datasets: [
-        {
-          label: 'Elapsed Time (ms)',
-          data: data.times,
-          borderColor: COLORS[colorIdx],
-          backgroundColor: COLORS[colorIdx] + '20',
-          fill: true,
-          tension: 0.3,
-          pointRadius: 3,
-          pointHoverRadius: 6,
-          borderWidth: 2,
-        },
-        {
-          label: 'Trend',
-          data: trendLine,
-          borderColor: '#f87171',
-          borderDash: [6, 4],
-          borderWidth: 1.5,
-          pointRadius: 0,
-          fill: false,
-        }
-      ]
-    },
+    data: { labels, datasets },
     options: {
       responsive: true,
       maintainAspectRatio: !showLegend,
       aspectRatio: showLegend ? undefined : 2,
       interaction: { intersect: false, mode: 'index' },
       plugins: {
-        legend: { display: showLegend, labels: { color: '#94a3b8' } },
+        legend: { display: true, labels: { color: '#94a3b8' } },
         tooltip: {
           backgroundColor: '#1e293b',
           titleColor: '#e2e8f0',
@@ -264,7 +296,7 @@ function createChart(canvas, testName, data, showLegend = false) {
           borderColor: '#334155',
           borderWidth: 1,
           callbacks: {
-            label: ctx => ctx.dataset.label === 'Trend' ? null : `${ctx.parsed.y} ms`
+            label: ctx => ctx.parsed.y !== null ? `${ctx.dataset.label}: ${ctx.parsed.y} ms` : null
           }
         }
       },
@@ -284,21 +316,12 @@ function createChart(canvas, testName, data, showLegend = false) {
 }
 
 // Populate filter dropdown
-const categories = new Set();
-Object.keys(DATA).forEach(name => {
-  // Extract category: e.g. PERF_PV, PERF_MOMENTS, PERF_CUBE_HISTOGRAM
-  const parts = name.replace('PERF_', '').split('_');
-  // Remove last part (CASA/FITS/HDF5/Mode0 etc)
-  if (parts.length > 1) {
-    parts.pop();
-    categories.add('PERF_' + parts.join('_'));
-  }
-});
+const groups = groupTests();
 const filterEl = document.getElementById('filter');
-[...categories].sort().forEach(cat => {
+Object.keys(groups).sort().forEach(group => {
   const opt = document.createElement('option');
-  opt.value = cat;
-  opt.textContent = cat.replace('PERF_', '').replace(/_/g, ' ');
+  opt.value = group;
+  opt.textContent = group.replace('PERF_', '').replace(/_/g, ' ');
   filterEl.appendChild(opt);
 });
 
@@ -311,44 +334,54 @@ function renderGrid(filter = 'ALL', sort = 'name') {
   charts.forEach(c => c.destroy());
   charts = [];
 
-  let tests = Object.entries(DATA);
+  let entries = Object.entries(groups);
   if (filter !== 'ALL') {
-    tests = tests.filter(([name]) => name.startsWith(filter));
+    entries = entries.filter(([name]) => name === filter);
   }
 
   if (sort === 'trend') {
-    tests.sort((a, b) => {
-      const sa = getStats(a[1].times).slope;
-      const sb = getStats(b[1].times).slope;
-      return sb - sa; // Worst trend first
+    entries.sort((a, b) => {
+      // Sort by max avg slope across variants
+      const maxSlope = variants => Math.max(...Object.values(variants).map(v => getStats(v.times).slope));
+      return maxSlope(b[1]) - maxSlope(a[1]);
     });
   } else {
-    tests.sort((a, b) => a[0].localeCompare(b[0]));
+    entries.sort((a, b) => a[0].localeCompare(b[0]));
   }
 
-  tests.forEach(([testName, data]) => {
-    const stats = getStats(data.times);
+  entries.forEach(([groupName, variants]) => {
     const card = document.createElement('div');
     card.className = 'chart-card';
+
+    // Build stats for each variant
+    let statsHtml = '';
+    Object.entries(variants).forEach(([variant, data]) => {
+      const stats = getStats(data.times);
+      const color = VARIANT_COLORS[variant] || '#94a3b8';
+      statsHtml += `
+        <div class="stats">
+          <span style="color:${color};font-weight:600">${variant}:</span>
+          <span>Min: <span class="val">${stats.min} ms</span></span>
+          <span>Max: <span class="val">${stats.max} ms</span></span>
+          <span>Avg: <span class="val">${stats.avg.toFixed(0)} ms</span></span>
+          <span>Trend: <span class="val" style="color:${stats.slope > 1 ? '#f87171' : stats.slope < -1 ? '#34d399' : '#94a3b8'}">${stats.slope > 0 ? '+' : ''}${stats.slope.toFixed(1)} ms/day</span></span>
+        </div>`;
+    });
+
     card.innerHTML = `
-      <h3>${testName}</h3>
+      <h3>${groupName}</h3>
       <canvas></canvas>
-      <div class="stats">
-        <span>Min: <span class="val">${stats.min} ms</span></span>
-        <span>Max: <span class="val">${stats.max} ms</span></span>
-        <span>Avg: <span class="val">${stats.avg.toFixed(0)} ms</span></span>
-        <span>Trend: <span class="val" style="color:${stats.slope > 1 ? '#f87171' : stats.slope < -1 ? '#34d399' : '#94a3b8'}">${stats.slope > 0 ? '+' : ''}${stats.slope.toFixed(1)} ms/day</span></span>
-      </div>
+      ${statsHtml}
     `;
     grid.appendChild(card);
 
     const canvas = card.querySelector('canvas');
-    const chart = createChart(canvas, testName, data);
+    const chart = createGroupChart(canvas, groupName, variants);
     charts.push(chart);
 
     // Click to enlarge
     card.style.cursor = 'pointer';
-    card.addEventListener('click', () => openModal(testName, data));
+    card.addEventListener('click', () => openModal(groupName, variants));
   });
 }
 
@@ -356,11 +389,11 @@ function renderGrid(filter = 'ALL', sort = 'name') {
 let modalChart = null;
 const modal = document.getElementById('modal');
 
-function openModal(testName, data) {
+function openModal(groupName, variants) {
   modal.classList.add('active');
-  document.getElementById('modalTitle').textContent = testName;
+  document.getElementById('modalTitle').textContent = groupName;
   if (modalChart) modalChart.destroy();
-  modalChart = createChart(document.getElementById('modalCanvas'), testName, data, true);
+  modalChart = createGroupChart(document.getElementById('modalCanvas'), groupName, variants, true);
   modalChart.options.maintainAspectRatio = false;
   modalChart.resize();
 }
