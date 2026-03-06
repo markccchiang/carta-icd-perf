@@ -11,8 +11,11 @@ carta-icd-perf/
 ├── scripts/
 │   ├── extract_perf_*.sh             # Individual extraction scripts per test
 │   ├── run_all_tests.sh              # Run all extraction scripts
-│   └── generate_dashboard.sh         # Generate dashboard.html from test_logs/
-├── dashboard.html                    # Generated interactive dashboard
+│   └── generate_dashboard.sh         # Generate data.js from test_logs/
+├── dashboard.html                    # Static dashboard page
+├── dashboard.css                     # Dashboard styles
+├── dashboard.js                      # Dashboard logic (charts, UI, modal)
+├── data.js                           # Generated test data (refreshed by script)
 └── README.md
 ```
 
@@ -51,7 +54,7 @@ Runs all `extract_perf_*.sh` scripts and saves the results as individual log fil
 
 ### scripts/generate_dashboard.sh
 
-Reads all log files in `test_logs/` and generates a self-contained `dashboard.html`.
+Reads all log files in `test_logs/` and generates `data.js`. The dashboard HTML, CSS, and JS files are static and do not need to be regenerated.
 
 ```bash
 ./scripts/generate_dashboard.sh
@@ -64,7 +67,14 @@ Reads all log files in `test_logs/` and generates a self-contained `dashboard.ht
 - **Filter dropdown** to view tests by category (e.g., PV, MOMENTS, CUBE HISTOGRAM)
 - **Click any chart** to enlarge it in a modal view
 
-## Adding New Logs
+## Workflow
+
+The dashboard is split into static files (`dashboard.html`, `dashboard.css`, `dashboard.js`) and a generated data file (`data.js`). This means:
+
+- **To refresh data only:** run `./scripts/generate_dashboard.sh` — this regenerates `data.js` without touching the dashboard files
+- **To rebuild everything from raw logs:** run `./scripts/run_all_tests.sh && ./scripts/generate_dashboard.sh`
+
+### Adding New Logs
 
 1. Place new `perf-YYYYMMDD.log` files in the `log/` directory
 2. Re-run the pipeline:
@@ -72,3 +82,11 @@ Reads all log files in `test_logs/` and generates a self-contained `dashboard.ht
    ./scripts/run_all_tests.sh && ./scripts/generate_dashboard.sh
    ```
 3. Refresh `dashboard.html` in your browser
+
+### Modifying the Dashboard
+
+The dashboard UI can be changed by editing these static files directly — no regeneration needed:
+
+- `dashboard.html` — page structure
+- `dashboard.css` — styles
+- `dashboard.js` — chart rendering, filtering, modal logic
