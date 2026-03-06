@@ -191,7 +191,7 @@ function renderGrid(filter = 'ALL') {
     });
 
     card.innerHTML = `
-      <h3>${groupName}</h3>
+      <h3>${groupName.replace('PERF_', '').replace(/_/g, ' ')}</h3>
       <canvas></canvas>
       ${statsHtml}
     `;
