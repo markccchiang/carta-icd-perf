@@ -26,14 +26,30 @@ function getGroupName(testName) {
   return testName.slice(0, -variant.length);
 }
 
-// Group tests by base name
-function groupTests() {
+// Filter a single test's data by date range
+function filterByDateRange(data, fromDate, toDate) {
+  const filtered = { dates: [], times: [] };
+  data.dates.forEach((d, i) => {
+    const dateOnly = d.slice(0, 10);
+    if (dateOnly >= fromDate && dateOnly <= toDate) {
+      filtered.dates.push(d);
+      filtered.times.push(data.times[i]);
+    }
+  });
+  return filtered;
+}
+
+// Group tests by base name, applying date filter
+function groupTests(fromDate, toDate) {
   const groups = {};
   Object.keys(DATA).forEach(name => {
     const group = getGroupName(name);
     if (!groups[group]) groups[group] = {};
     const variant = getVariant(name) || name;
-    groups[group][variant] = DATA[name];
+    const filtered = filterByDateRange(DATA[name], fromDate, toDate);
+    if (filtered.dates.length > 0) {
+      groups[group][variant] = filtered;
+    }
   });
   return groups;
 }
@@ -118,10 +134,19 @@ function createGroupChart(canvas, groupName, variants, showLegend = false) {
   });
 }
 
-// Populate filter dropdown
-const groups = groupTests();
+// Set up date inputs with defaults (180 days ago to today)
+const dateFromEl = document.getElementById('dateFrom');
+const dateToEl = document.getElementById('dateTo');
+const today = new Date();
+const defaultFrom = new Date(today);
+defaultFrom.setDate(defaultFrom.getDate() - 30);
+dateFromEl.value = defaultFrom.toISOString().slice(0, 10);
+dateToEl.value = today.toISOString().slice(0, 10);
+
+// Populate filter dropdown (use full data for dropdown options)
+const allGroups = groupTests('0000-00-00', '9999-99-99');
 const filterEl = document.getElementById('filter');
-Object.keys(groups).sort().forEach(group => {
+Object.keys(allGroups).sort().forEach(group => {
   const opt = document.createElement('option');
   opt.value = group;
   opt.textContent = group.replace('PERF_', '').replace(/_/g, ' ');
@@ -136,6 +161,7 @@ function renderGrid(filter = 'ALL') {
   charts.forEach(c => c.destroy());
   charts = [];
 
+  const groups = groupTests(dateFromEl.value, dateToEl.value);
   let entries = Object.entries(groups);
   if (filter !== 'ALL') {
     entries = entries.filter(([name]) => name === filter);
@@ -201,5 +227,7 @@ modal.addEventListener('click', (e) => {
 
 // Controls
 filterEl.addEventListener('change', () => renderGrid(filterEl.value));
+dateFromEl.addEventListener('change', () => renderGrid(filterEl.value));
+dateToEl.addEventListener('change', () => renderGrid(filterEl.value));
 
 renderGrid();
