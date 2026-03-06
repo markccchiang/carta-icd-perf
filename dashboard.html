@@ -30,7 +30,15 @@
   </div>
 </div>
 
-<script src="data.js"></script>
-<script src="dashboard.js"></script>
+<script>
+  var s = document.createElement('script');
+  s.src = 'data.js?t=' + Date.now();
+  s.onload = function() {
+    var d = document.createElement('script');
+    d.src = 'dashboard.js';
+    document.body.appendChild(d);
+  };
+  document.body.appendChild(s);
+</script>
 </body>
 </html>
