@@ -119,4 +119,4 @@ To update data without rebuilding the image, mount `data.js` as a volume:
 docker run -p 8080:80 -v $(pwd)/data.js:/usr/share/nginx/html/data.js carta-icd-perf
 ```
 
-This way you just run `./scripts/run_all_tests.sh && ./scripts/extract_data.sh` and refresh the browser — no image rebuild needed. The nginx config sets `no-cache` headers on `data.js` so the browser always fetches fresh data.
+Place new `perf-YYYYMMDD-HH.log` files in the `log/` directory, then run `./scripts/run_all_tests.sh && ./scripts/extract_data.sh` and refresh the browser — or simply replace `data.js` directly. No image rebuild is needed. The nginx config sets `no-cache` headers on `data.js`, so the browser always fetches fresh data.
