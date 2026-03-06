@@ -163,7 +163,9 @@ function renderGrid(filter = 'ALL') {
 
   const groups = groupTests(dateFromEl.value, dateToEl.value);
   let entries = Object.entries(groups);
-  if (filter !== 'ALL') {
+  if (filter === 'ALL') {
+    entries = entries.filter(([name]) => name !== 'PERF_CONTOUR_DATA');
+  } else {
     entries = entries.filter(([name]) => name === filter);
   }
 
