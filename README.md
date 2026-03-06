@@ -27,15 +27,6 @@ carta-icd-perf/
 - A modern web browser (for viewing the dashboard)
 - Docker (optional, for containerized deployment)
 
-## Quick Start
-
-Generate everything and open the dashboard:
-
-```bash
-./scripts/run_all_tests.sh && ./scripts/extract_data.sh
-open dashboard.html
-```
-
 ## Scripts
 
 ### scripts/extract_perf.sh
@@ -72,19 +63,13 @@ Reads all log files in `test_logs/` and generates `data.js`. The dashboard HTML,
 
 ## Workflow
 
-The dashboard is split into static files (`dashboard.html`, `dashboard.css`, `dashboard.js`) and a generated data file (`data.js`). This means:
+The dashboard is split into static files (`dashboard.html`, `dashboard.css`, `dashboard.js`) and a generated data file (`data.js`).
 
-- **To refresh data only:** run `./scripts/extract_data.sh` — this regenerates `data.js` without touching the dashboard files
+**Important:** Before running any scripts, make sure your `perf-YYYYMMDD-HH.log` files are placed in the `log/` directory. The scripts read from this directory to extract test results.
+
 - **To rebuild everything from raw logs:** run `./scripts/run_all_tests.sh && ./scripts/extract_data.sh`
-
-### Adding New Logs
-
-1. Place new `perf-YYYYMMDD-HH.log` files in the `log/` directory
-2. Re-run the pipeline:
-   ```bash
-   ./scripts/run_all_tests.sh && ./scripts/extract_data.sh
-   ```
-3. Refresh `dashboard.html` in your browser
+- **To refresh data only** (if `test_logs/` is already up to date): run `./scripts/extract_data.sh` — this regenerates `data.js` without touching the dashboard files
+- After running the scripts, refresh `dashboard.html` in your browser
 
 ### Modifying the Dashboard
 
