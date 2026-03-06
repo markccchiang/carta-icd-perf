@@ -11,7 +11,7 @@ carta-icd-perf/
 ├── scripts/
 │   ├── extract_perf.sh               # Generic extraction script (called by run_all_tests.sh)
 │   ├── run_all_tests.sh              # Run all extractions with test-specific patterns
-│   └── extract_data.sh         # Generate data.js from test_logs/
+│   └── extract_data.sh               # Generate data.js from test_logs/
 ├── dashboard.html                    # Static dashboard page
 ├── dashboard.css                     # Dashboard styles
 ├── dashboard.js                      # Dashboard logic (charts, UI, modal)
@@ -111,4 +111,4 @@ To update data without rebuilding the image, mount `data.js` as a volume:
 docker run -p 8080:80 -v $(pwd)/data.js:/usr/share/nginx/html/data.js carta-icd-perf
 ```
 
-This way you just run `./scripts/extract_data.sh` and refresh the browser — no image rebuild needed. The nginx config sets `no-cache` headers on `data.js` so the browser always fetches fresh data.
+This way you just run `./scripts/run_all_tests.sh && ./scripts/extract_data.sh` and refresh the browser — no image rebuild needed. The nginx config sets `no-cache` headers on `data.js` so the browser always fetches fresh data.
