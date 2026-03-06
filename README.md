@@ -6,12 +6,12 @@ A set of bash scripts that parse Jest performance test logs and generate an inte
 
 ```
 carta-icd-perf/
-├── log/                              # Source log files (perf-YYYYMMDD.log)
+├── log/                              # Source log files (perf-YYYYMMDD-HH.log)
 ├── test_logs/                        # Generated per-test elapsed time logs
 ├── scripts/
 │   ├── extract_perf.sh               # Generic extraction script (called by run_all_tests.sh)
 │   ├── run_all_tests.sh              # Run all extractions with test-specific patterns
-│   └── generate_dashboard.sh         # Generate data.js from test_logs/
+│   └── extract_data.sh         # Generate data.js from test_logs/
 ├── dashboard.html                    # Static dashboard page
 ├── dashboard.css                     # Dashboard styles
 ├── dashboard.js                      # Dashboard logic (charts, UI, modal)
@@ -32,7 +32,7 @@ carta-icd-perf/
 Generate everything and open the dashboard:
 
 ```bash
-./scripts/run_all_tests.sh && ./scripts/generate_dashboard.sh
+./scripts/run_all_tests.sh && ./scripts/extract_data.sh
 open dashboard.html
 ```
 
@@ -55,12 +55,12 @@ Runs `extract_perf.sh` for all tests with their specific patterns, saving result
 ./scripts/run_all_tests.sh
 ```
 
-### scripts/generate_dashboard.sh
+### scripts/extract_data.sh
 
 Reads all log files in `test_logs/` and generates `data.js`. The dashboard HTML, CSS, and JS files are static and do not need to be regenerated.
 
 ```bash
-./scripts/generate_dashboard.sh
+./scripts/extract_data.sh
 ```
 
 ## Dashboard Features
@@ -74,15 +74,15 @@ Reads all log files in `test_logs/` and generates `data.js`. The dashboard HTML,
 
 The dashboard is split into static files (`dashboard.html`, `dashboard.css`, `dashboard.js`) and a generated data file (`data.js`). This means:
 
-- **To refresh data only:** run `./scripts/generate_dashboard.sh` — this regenerates `data.js` without touching the dashboard files
-- **To rebuild everything from raw logs:** run `./scripts/run_all_tests.sh && ./scripts/generate_dashboard.sh`
+- **To refresh data only:** run `./scripts/extract_data.sh` — this regenerates `data.js` without touching the dashboard files
+- **To rebuild everything from raw logs:** run `./scripts/run_all_tests.sh && ./scripts/extract_data.sh`
 
 ### Adding New Logs
 
-1. Place new `perf-YYYYMMDD.log` files in the `log/` directory
+1. Place new `perf-YYYYMMDD-HH.log` files in the `log/` directory
 2. Re-run the pipeline:
    ```bash
-   ./scripts/run_all_tests.sh && ./scripts/generate_dashboard.sh
+   ./scripts/run_all_tests.sh && ./scripts/extract_data.sh
    ```
 3. Refresh `dashboard.html` in your browser
 
@@ -111,4 +111,4 @@ To update data without rebuilding the image, mount `data.js` as a volume:
 docker run -p 8080:80 -v $(pwd)/data.js:/usr/share/nginx/html/data.js carta-icd-perf
 ```
 
-This way you just run `./scripts/generate_dashboard.sh` and refresh the browser — no image rebuild needed. The nginx config sets `no-cache` headers on `data.js` so the browser always fetches fresh data.
+This way you just run `./scripts/extract_data.sh` and refresh the browser — no image rebuild needed. The nginx config sets `no-cache` headers on `data.js` so the browser always fetches fresh data.
