@@ -81,7 +81,7 @@ function createGroupChart(canvas, groupName, variants, showLegend = false) {
     const color = VARIANT_COLORS[variant] || '#94a3b8';
     // Map data to unified date labels (null for missing dates)
     const dateMap = {};
-    data.dates.forEach((d, i) => { dateMap[d] = data.times[i]; });
+    data.dates.forEach((d, i) => { dateMap[d] = data.times[i] / 1000; });
     const values = labels.map(d => dateMap[d] !== undefined ? dateMap[d] : null);
 
     datasets.push({
@@ -115,7 +115,7 @@ function createGroupChart(canvas, groupName, variants, showLegend = false) {
           borderColor: '#334155',
           borderWidth: 1,
           callbacks: {
-            label: ctx => ctx.parsed.y !== null ? `${ctx.dataset.label}: ${ctx.parsed.y} ms` : null,
+            label: ctx => ctx.parsed.y !== null ? `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)} s` : null,
             afterBody: (items) => {
               const casaItem = items.find(i => i.dataset.label === 'CASA');
               if (!casaItem || casaItem.parsed.y === null || casaItem.parsed.y === 0) return '';
@@ -137,7 +137,7 @@ function createGroupChart(canvas, groupName, variants, showLegend = false) {
           grid: { color: '#1e293b' }
         },
         y: {
-          title: { display: true, text: 'Milliseconds', color: '#64748b' },
+          title: { display: true, text: 'Seconds', color: '#64748b' },
           ticks: { color: '#64748b' },
           grid: { color: '#283548' }
         }
@@ -195,10 +195,10 @@ function renderGrid(filter = 'ALL') {
       statsHtml += `
         <div class="stats">
           <span style="color:${color};font-weight:600">${variant}:</span>
-          <span>Min: <span class="val">${stats.min} ms</span></span>
-          <span>Max: <span class="val">${stats.max} ms</span></span>
-          <span>Avg: <span class="val">${stats.avg.toFixed(0)} ms</span></span>
-          <span>Trend: <span class="val" style="color:${stats.slope > 1 ? '#f87171' : stats.slope < -1 ? '#34d399' : '#94a3b8'}">${stats.slope > 0 ? '+' : ''}${stats.slope.toFixed(1)} ms/day (${stats.slope / stats.avg * 100 > 0 ? '+' : ''}${(stats.slope / stats.avg * 100).toFixed(2)} %/day)</span></span>
+          <span>Min: <span class="val">${(stats.min / 1000).toFixed(1)} s</span></span>
+          <span>Max: <span class="val">${(stats.max / 1000).toFixed(1)} s</span></span>
+          <span>Avg: <span class="val">${(stats.avg / 1000).toFixed(1)} s</span></span>
+          <span>Trend: <span class="val" style="color:${stats.slope > 1 ? '#f87171' : stats.slope < -1 ? '#34d399' : '#94a3b8'}">${stats.slope > 0 ? '+' : ''}${(stats.slope / 1000).toFixed(2)} s/day (${stats.slope / stats.avg * 100 > 0 ? '+' : ''}${(stats.slope / stats.avg * 100).toFixed(2)} %/day)</span></span>
         </div>`;
     });
 
