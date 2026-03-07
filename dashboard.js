@@ -115,7 +115,19 @@ function createGroupChart(canvas, groupName, variants, showLegend = false) {
           borderColor: '#334155',
           borderWidth: 1,
           callbacks: {
-            label: ctx => ctx.parsed.y !== null ? `${ctx.dataset.label}: ${ctx.parsed.y} ms` : null
+            label: ctx => ctx.parsed.y !== null ? `${ctx.dataset.label}: ${ctx.parsed.y} ms` : null,
+            afterBody: (items) => {
+              const casaItem = items.find(i => i.dataset.label === 'CASA');
+              if (!casaItem || casaItem.parsed.y === null || casaItem.parsed.y === 0) return '';
+              const casaVal = casaItem.parsed.y;
+              const lines = ['\nRatios (vs CASA):'];
+              items.forEach(i => {
+                if (i.parsed.y === null) return;
+                const ratio = i.parsed.y / casaVal;
+                lines.push(`  ${i.dataset.label}: ${ratio.toFixed(2)}`);
+              });
+              return lines.join('\n');
+            }
           }
         }
       },
