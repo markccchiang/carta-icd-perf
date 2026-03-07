@@ -198,7 +198,7 @@ function renderGrid(filter = 'ALL') {
           <span>Min: <span class="val">${stats.min} ms</span></span>
           <span>Max: <span class="val">${stats.max} ms</span></span>
           <span>Avg: <span class="val">${stats.avg.toFixed(0)} ms</span></span>
-          <span>Trend: <span class="val" style="color:${stats.slope > 1 ? '#f87171' : stats.slope < -1 ? '#34d399' : '#94a3b8'}">${stats.slope > 0 ? '+' : ''}${stats.slope.toFixed(1)} ms/day</span></span>
+          <span>Trend: <span class="val" style="color:${stats.slope > 1 ? '#f87171' : stats.slope < -1 ? '#34d399' : '#94a3b8'}">${stats.slope > 0 ? '+' : ''}${stats.slope.toFixed(1)} ms/day (${stats.slope / stats.avg * 100 > 0 ? '+' : ''}${(stats.slope / stats.avg * 100).toFixed(2)} %/day)</span></span>
         </div>`;
     });
 
