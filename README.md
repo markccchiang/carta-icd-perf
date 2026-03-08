@@ -96,8 +96,6 @@ You can choose any available host port by changing the `-p` mapping. For example
 docker run -d -p 9090:80 carta-icd-perf
 ```
 
-The format is `-p <host-port>:80`, where `<host-port>` is the port you want to access on your machine.
-
 To update data without rebuilding the image, mount `data.js` as a volume:
 
 ```bash
