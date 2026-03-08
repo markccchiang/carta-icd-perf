@@ -81,11 +81,11 @@ The dashboard UI can be changed by editing these static files directly — no re
 
 ## Docker
 
-Build and run the dashboard as a containerized nginx server:
+Build and run the dashboard as a containerized nginx server. The `-d` flag runs the container in detached mode (in the background), so your terminal remains free for other tasks:
 
 ```bash
 docker build -t carta-icd-perf .
-docker run -p 8080:80 carta-icd-perf
+docker run -d -p 8080:80 carta-icd-perf
 ```
 
 Then open `http://localhost:8080`.
@@ -93,7 +93,7 @@ Then open `http://localhost:8080`.
 You can choose any available host port by changing the `-p` mapping. For example, to serve the dashboard on port `9090`:
 
 ```bash
-docker run -p 9090:80 carta-icd-perf
+docker run -d -p 9090:80 carta-icd-perf
 ```
 
 The format is `-p <host-port>:80`, where `<host-port>` is the port you want to access on your machine.
@@ -101,7 +101,7 @@ The format is `-p <host-port>:80`, where `<host-port>` is the port you want to a
 To update data without rebuilding the image, mount `data.js` as a volume:
 
 ```bash
-docker run -p 8080:80 -v $(pwd)/data.js:/usr/share/nginx/html/data.js carta-icd-perf
+docker run -d -p 8080:80 -v $(pwd)/data.js:/usr/share/nginx/html/data.js carta-icd-perf
 ```
 
 Place new `perf-YYYYMMDD-HH.log` files in the `log/` directory, then run `./scripts/run_all_tests.sh && ./scripts/extract_data.sh` and refresh the browser — or simply replace `data.js` directly. No image rebuild is needed. The nginx config sets `no-cache` headers on `data.js`, so the browser always fetches fresh data.
