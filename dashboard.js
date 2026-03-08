@@ -225,7 +225,7 @@ const modal = document.getElementById('modal');
 
 function openModal(groupName, variants) {
   modal.classList.add('active');
-  document.getElementById('modalTitle').textContent = groupName;
+  document.getElementById('modalTitle').textContent = groupName.replace('PERF_', '').replace(/_/g, ' ');
   if (modalChart) modalChart.destroy();
   modalChart = createGroupChart(document.getElementById('modalCanvas'), groupName, variants, true);
   modalChart.options.maintainAspectRatio = false;
