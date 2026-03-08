@@ -1,6 +1,6 @@
-# CARTA ICD Performance Tests
+# CARTA ICD Performance Tests Dashboard
 
-A set of bash scripts that parse Jest performance test logs and generate an interactive web dashboard to visualize elapsed time trends.
+This repo presents the daily performance test results for CARTA ICD. It includes a set of bash scripts that parse Jest performance test logs and generate an interactive web dashboard to visualize elapsed time trends.
 
 ## Directory Structure
 
