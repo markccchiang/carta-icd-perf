@@ -186,12 +186,11 @@ function createDailyStatsChart(canvas, groupName, variants, showLegend = false) 
     datasets.push({
       label: variant + ' Min',
       data: stats.days.map((d, i) => ({ x: d, y: stats.min[i] / 1000 })),
-      borderColor: color + '50',
+      borderColor: 'transparent',
       backgroundColor: 'transparent',
       fill: false,
-      pointRadius: 2,
-      borderWidth: 1,
-      borderDash: [4, 3],
+      pointRadius: 0,
+      borderWidth: 0,
       tension: 0.3,
       order: 2,
     });
