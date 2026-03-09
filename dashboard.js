@@ -54,6 +54,25 @@ function groupTests(fromDate, toDate) {
   return groups;
 }
 
+// Compute daily statistics (avg, min, max) from date+time arrays
+function computeDailyStats(dates, times) {
+  const dayMap = {};
+  dates.forEach((d, i) => {
+    const day = d.slice(0, 10);
+    if (!dayMap[day]) dayMap[day] = [];
+    dayMap[day].push(times[i]);
+  });
+  const days = Object.keys(dayMap).sort();
+  const avg = [], min = [], max = [];
+  days.forEach(day => {
+    const vals = dayMap[day];
+    avg.push(vals.reduce((a, b) => a + b, 0) / vals.length);
+    min.push(Math.min(...vals));
+    max.push(Math.max(...vals));
+  });
+  return { days, avg, min, max };
+}
+
 function getStats(times) {
   const min = Math.min(...times);
   const max = Math.max(...times);
@@ -146,6 +165,104 @@ function createGroupChart(canvas, groupName, variants, showLegend = false) {
   });
 }
 
+function createDailyStatsChart(canvas, groupName, variants, showLegend = false) {
+  const datasets = [];
+  Object.entries(variants).forEach(([variant, data]) => {
+    const color = VARIANT_COLORS[variant] || '#94a3b8';
+    const stats = computeDailyStats(data.dates, data.times);
+
+    // Min-Max range (filled area)
+    datasets.push({
+      label: variant + ' Max',
+      data: stats.days.map((d, i) => ({ x: d, y: stats.max[i] / 1000 })),
+      borderColor: 'transparent',
+      backgroundColor: color + '25',
+      fill: '+1',
+      pointRadius: 0,
+      borderWidth: 0,
+      tension: 0.3,
+      order: 3,
+    });
+    datasets.push({
+      label: variant + ' Min',
+      data: stats.days.map((d, i) => ({ x: d, y: stats.min[i] / 1000 })),
+      borderColor: color + '50',
+      backgroundColor: 'transparent',
+      fill: false,
+      pointRadius: 2,
+      borderWidth: 1,
+      borderDash: [4, 3],
+      tension: 0.3,
+      order: 2,
+    });
+    // Avg line (solid, prominent)
+    datasets.push({
+      label: variant + ' Avg',
+      data: stats.days.map((d, i) => ({ x: d, y: stats.avg[i] / 1000 })),
+      borderColor: color,
+      backgroundColor: color + '40',
+      fill: false,
+      pointRadius: 4,
+      pointHoverRadius: 7,
+      borderWidth: 2.5,
+      tension: 0.3,
+      order: 1,
+    });
+  });
+
+  // Collect all unique days for labels
+  const allDays = new Set();
+  Object.values(variants).forEach(v => {
+    const stats = computeDailyStats(v.dates, v.times);
+    stats.days.forEach(d => allDays.add(d));
+  });
+  const labels = [...allDays].sort();
+
+  return new Chart(canvas, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: !showLegend,
+      aspectRatio: showLegend ? undefined : 2,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: {
+          display: true,
+          labels: {
+            color: '#94a3b8',
+            filter: item => item.text.endsWith('Avg'),
+          }
+        },
+        tooltip: {
+          backgroundColor: '#1e293b',
+          titleColor: '#e2e8f0',
+          bodyColor: '#cbd5e1',
+          borderColor: '#334155',
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => {
+              if (ctx.parsed.y === null) return null;
+              return `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)} s`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#64748b', maxRotation: 45, font: { size: 10 } },
+          grid: { color: '#1e293b' }
+        },
+        y: {
+          title: { display: true, text: 'Seconds', color: '#64748b' },
+          ticks: { color: '#64748b' },
+          grid: { color: '#283548' }
+        }
+      }
+    }
+  });
+}
+
 // Set up date inputs with defaults (180 days ago to today)
 const dateFromEl = document.getElementById('dateFrom');
 const dateToEl = document.getElementById('dateTo');
@@ -166,6 +283,15 @@ Object.keys(allGroups).sort().forEach(group => {
 });
 
 let charts = [];
+let viewMode = 'raw'; // 'raw' or 'daily'
+
+const viewToggleEl = document.getElementById('viewToggle');
+viewToggleEl.addEventListener('click', () => {
+  viewMode = viewMode === 'raw' ? 'daily' : 'raw';
+  viewToggleEl.textContent = viewMode === 'raw' ? 'Daily Stats View' : 'Raw Data View';
+  viewToggleEl.classList.toggle('active', viewMode === 'daily');
+  renderGrid(filterEl.value);
+});
 
 function renderGrid(filter = 'ALL') {
   const grid = document.getElementById('grid');
@@ -190,16 +316,32 @@ function renderGrid(filter = 'ALL') {
     // Build stats for each variant
     let statsHtml = '';
     Object.entries(variants).forEach(([variant, data]) => {
-      const stats = getStats(data.times);
       const color = VARIANT_COLORS[variant] || '#94a3b8';
-      statsHtml += `
-        <div class="stats">
-          <span style="color:${color};font-weight:600">${variant}:</span>
-          <span>Min: <span class="val">${(stats.min / 1000).toFixed(1)} s</span></span>
-          <span>Max: <span class="val">${(stats.max / 1000).toFixed(1)} s</span></span>
-          <span>Avg: <span class="val">${(stats.avg / 1000).toFixed(1)} s</span></span>
-          <span>Trend: <span class="val" style="color:${stats.slope > 1 ? '#f87171' : stats.slope < -1 ? '#34d399' : '#94a3b8'}">${stats.slope > 0 ? '+' : ''}${(stats.slope / 1000).toFixed(2)} s/day (${stats.slope / stats.avg * 100 > 0 ? '+' : ''}${(stats.slope / stats.avg * 100).toFixed(2)} %/day)</span></span>
-        </div>`;
+
+      if (viewMode === 'daily') {
+        const daily = computeDailyStats(data.dates, data.times);
+        const overallAvg = daily.avg.reduce((a, b) => a + b, 0) / daily.avg.length;
+        const overallMin = Math.min(...daily.min);
+        const overallMax = Math.max(...daily.max);
+        statsHtml += `
+          <div class="stats">
+            <span style="color:${color};font-weight:600">${variant}:</span>
+            <span>Daily Avg: <span class="val">${(overallAvg / 1000).toFixed(2)} s</span></span>
+            <span>Daily Min: <span class="val">${(overallMin / 1000).toFixed(2)} s</span></span>
+            <span>Daily Max: <span class="val">${(overallMax / 1000).toFixed(2)} s</span></span>
+            <span>Days: <span class="val">${daily.days.length}</span></span>
+          </div>`;
+      } else {
+        const stats = getStats(data.times);
+        statsHtml += `
+          <div class="stats">
+            <span style="color:${color};font-weight:600">${variant}:</span>
+            <span>Min: <span class="val">${(stats.min / 1000).toFixed(1)} s</span></span>
+            <span>Max: <span class="val">${(stats.max / 1000).toFixed(1)} s</span></span>
+            <span>Avg: <span class="val">${(stats.avg / 1000).toFixed(1)} s</span></span>
+            <span>Trend: <span class="val" style="color:${stats.slope > 1 ? '#f87171' : stats.slope < -1 ? '#34d399' : '#94a3b8'}">${stats.slope > 0 ? '+' : ''}${(stats.slope / 1000).toFixed(2)} s/day (${stats.slope / stats.avg * 100 > 0 ? '+' : ''}${(stats.slope / stats.avg * 100).toFixed(2)} %/day)</span></span>
+          </div>`;
+      }
     });
 
     card.innerHTML = `
@@ -210,7 +352,9 @@ function renderGrid(filter = 'ALL') {
     grid.appendChild(card);
 
     const canvas = card.querySelector('canvas');
-    const chart = createGroupChart(canvas, groupName, variants);
+    const chart = viewMode === 'daily'
+      ? createDailyStatsChart(canvas, groupName, variants)
+      : createGroupChart(canvas, groupName, variants);
     charts.push(chart);
 
     // Click to enlarge
@@ -227,7 +371,9 @@ function openModal(groupName, variants) {
   modal.classList.add('active');
   document.getElementById('modalTitle').textContent = groupName.replace('PERF_', '').replace(/_/g, ' ');
   if (modalChart) modalChart.destroy();
-  modalChart = createGroupChart(document.getElementById('modalCanvas'), groupName, variants, true);
+  modalChart = viewMode === 'daily'
+    ? createDailyStatsChart(document.getElementById('modalCanvas'), groupName, variants, true)
+    : createGroupChart(document.getElementById('modalCanvas'), groupName, variants, true);
   modalChart.options.maintainAspectRatio = false;
   modalChart.resize();
 }
